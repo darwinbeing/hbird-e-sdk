@@ -54,21 +54,20 @@ void handle_m_time_interrupt(){
 
 
   GPIO_REG(GPIO_OUTPUT_VAL) ^= (0x1 << RED_LED_GPIO_OFFSET);
-  
+
   // Re-enable the timer interrupt.
   set_csr(mie, MIE_MTIE);
 
 }
 
 static void _putc(char c) {
-  while ((int32_t) UART0_REG(UART_REG_TXFIFO) < 0);
-  UART0_REG(UART_REG_TXFIFO) = c;
+  while (!(UART0_REG(UART_LSR) & UART_LSR_THRE));
+  UART0_REG(UART_TX) = c;
 }
 
 int _getc(char * c){
-  int32_t val = (int32_t) UART0_REG(UART_REG_RXFIFO);
-  if (val > 0) {
-    *c =  val & 0xFF;
+  if(UART0_REG(UART_LSR) & UART_LSR_DR) {
+    *c =  UART0_REG(UART_RX) & 0xFF;
     return 1;
   }
   return 0;
@@ -128,9 +127,9 @@ void register_plic_irqs (){
    *
    *************************************************************************/
   PLIC_init(&g_plic,
-	    PLIC_CTRL_ADDR,
-	    PLIC_NUM_INTERRUPTS,
-	    PLIC_NUM_PRIORITIES);
+            PLIC_CTRL_ADDR,
+            PLIC_NUM_INTERRUPTS,
+            PLIC_NUM_PRIORITIES);
 
 
   for (int ii = 0; ii < PLIC_NUM_INTERRUPTS; ii ++){
@@ -150,7 +149,7 @@ void register_plic_irqs (){
   PLIC_set_priority(&g_plic, PLIC_INT_DEVICE_BUTTON_1, 1);
   PLIC_set_priority(&g_plic, PLIC_INT_DEVICE_BUTTON_2, 1);
 
- } 
+ }
 
 
 void setup_mtime (){
@@ -169,7 +168,7 @@ int main(int argc, char **argv)
 {
   // Set up the GPIOs such that the LED GPIO
   // can be used as both Inputs and Outputs.
-  
+
 
   GPIO_REG(GPIO_OUTPUT_EN)  &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
   GPIO_REG(GPIO_PULLUP_EN)  &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
@@ -186,7 +185,7 @@ int main(int argc, char **argv)
   GPIO_REG(GPIO_OUTPUT_VAL)  &=  ~((0x1<< BLUE_LED_GPIO_OFFSET) | (0x1<< GREEN_LED_GPIO_OFFSET)) ;
 
 
-  
+
   // Print the message
   printf ("%s",printf_instructions_msg);
 
@@ -194,6 +193,7 @@ int main(int argc, char **argv)
 
   char c;
   // Check for user input
+
   while(1){
     if (_getc(&c) != 0){
        printf ("%s","I got an input, it is\n\r");
@@ -203,8 +203,6 @@ int main(int argc, char **argv)
   _putc(c);
   printf ("\n\r");
   printf ("%s","\nThank you for supporting RISC-V, you will see the blink soon on the board!\n");
-
-  
 
 
   // Disable the machine & timer interrupts until setup is done.
@@ -226,19 +224,17 @@ int main(int argc, char **argv)
   /**************************************************************************
    * Demonstrate fast GPIO bit-banging.
    * One can bang it faster than this if you know
-   * the entire OUTPUT_VAL that you want to write, but 
+   * the entire OUTPUT_VAL that you want to write, but
    * Atomics give a quick way to control a single bit.
    *************************************************************************/
-    
+
   // For Bit-banging with Atomics demo.
-  
+
   uint32_t bitbang_mask = 0;
   bitbang_mask = (1 << 13);
-
   GPIO_REG(GPIO_OUTPUT_EN) |= bitbang_mask;
 
   // For Bit-banging with Atomics demo.
-  
   while (1){
     GPIO_REG(GPIO_OUTPUT_VAL) ^= bitbang_mask;
     //atomic_fetch_xor_explicit(&GPIO_REG(GPIO_OUTPUT_VAL), bitbang_mask, memory_order_relaxed);

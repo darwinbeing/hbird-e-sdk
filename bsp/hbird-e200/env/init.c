@@ -112,9 +112,20 @@ static void uart_init(size_t baud_rate)
 {
   GPIO_REG(GPIO_IOF_SEL) &= ~IOF0_UART0_MASK;
   GPIO_REG(GPIO_IOF_EN) |= IOF0_UART0_MASK;
-  UART0_REG(UART_REG_DIV) = get_cpu_freq() / baud_rate - 1;
-  UART0_REG(UART_REG_TXCTRL) |= UART_TXEN;
-  UART0_REG(UART_REG_RXCTRL) |= UART_RXEN;
+  /* UART0_REG(UART_REG_DIV) = get_cpu_freq() / baud_rate - 1; */
+  /* UART0_REG(UART_REG_TXCTRL) |= UART_TXEN; */
+  /* UART0_REG(UART_REG_RXCTRL) |= UART_RXEN; */
+
+
+  UART0_REG(UART_LCR) = 0x83;
+  /* UART0_REG(UART_DLL) = get_cpu_freq() / (16 * baud_rate) - 1; */
+  UART0_REG(UART_DLL) = get_cpu_freq() / (16 * baud_rate);
+  /* UART0_REG(UART_DLL) = 8; */
+  UART0_REG(UART_DLM) = 0;
+  UART0_REG(UART_LCR) = 0x3;
+  UART0_REG(UART_FCR) = 0;
+  UART0_REG(UART_IER) = 0;
+
 }
 
 
@@ -144,12 +155,11 @@ void _init()
 {
   #ifndef NO_INIT
   uart_init(115200);
-
   printf("Core freq at %d Hz\n", get_cpu_freq());
 
   write_csr(mtvec, &trap_entry);
   #endif
-  
+
 }
 
 void _fini()

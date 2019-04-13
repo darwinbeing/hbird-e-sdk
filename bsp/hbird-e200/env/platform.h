@@ -112,7 +112,7 @@
 #define SPI0_REG(offset)        _REG32(SPI0_CTRL_ADDR, offset)
 #define SPI1_REG(offset)        _REG32(SPI1_CTRL_ADDR, offset)
 #define SPI2_REG(offset)        _REG32(SPI2_CTRL_ADDR, offset)
-#define UART0_REG(offset)       _REG32(UART0_CTRL_ADDR, offset)
+#define UART0_REG(offset)       _REG8(UART0_CTRL_ADDR, offset)
 #define UART1_REG(offset)       _REG32(UART1_CTRL_ADDR, offset)
 #define I2C_REG(offset)         _REG8(I2C_CTRL_ADDR, offset)
 
